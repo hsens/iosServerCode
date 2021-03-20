@@ -1,0 +1,226 @@
+package controllers
+
+import (
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"net/http"
+	"database/sql"
+	"../structs"
+	"github.com/gin-gonic/gin"
+)
+
+//to get one data with {id}
+func (idb *InDB) GetPerson(c *gin.Context) {
+	var (
+		person structs.Person
+		result gin.H
+	)
+	id := c.Param("id")
+	err := idb.DB.Where("id=?", id).First(&person).Error
+	if err != nil {
+		result = gin.H{
+			"result": err.Error(),
+			"count":  0,
+		}
+	} else {
+		result = gin.H{
+			"result": person,
+			"count":  1,
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+
+}
+
+func  GetAPI( tokenString string )var exists bool
+row := db.QueryRow("SELECT EXISTS(SELECT 1 FROM ...)")
+if err := row.Scan(&exists); err != nil {
+    return err
+} else if !exists {
+    if err := db.Exec("INSERT ..."); err != nil {
+        return err
+    }
+}var exists bool
+row := db.QueryRow("SELECT EXISTS(SELECT 1 FROM ...)")
+if err := row.Scan(&exists); err != nil {
+    return err
+} else if !exists {
+    if err := db.Exec("INSERT ..."); err != nil {
+        return err
+    }
+}var exists bool
+row := db.QueryRow("SELECT EXISTS(SELECT 1 FROM ...)")
+if err := row.Scan(&exists); err != nil {
+    return err
+} else if !exists {
+    if err := db.Exec("INSERT ..."); err != nil {
+        return err
+    }
+}var exists bool
+row := db.QueryRow("SELECT EXISTS(SELECT 1 FROM ...)")
+if err := row.Scan(&exists); err != nil {
+    return err
+} else if !exists {
+    if err := db.Exec("INSERT ..."); err != nil {
+        return err
+    }
+} {
+	//var (
+	//	person structs.Person
+	//	result gin.H
+	//)
+	db, err := sql.Open("mysql", "root:passwordisnotsecurethanpassphrase@tcp(http://178.128.98.114:3306)/hsensedb?charset=utf8&parseTime=True&loc=Local")
+	var exists bool
+	row := db.QueryRow("SELECT * FROM people where imei=`%v`",tokenString)
+	if err := row.Scan(&exists); err != nil {
+	    return err
+	} else if !exists {
+	    fmt.Printf("bangbang"); err != nil {
+       		 return 
+    		}
+	}
+	//tokenString := c.Request.Header.Get("Authorization")
+	//fmt.Printf("Token ada di con: %v",tokenString)
+	//err := idb.DB.Where("Api=?", tokenString).First(&person).Error
+	//if err != nil {
+	//	result = gin.H{
+	//		"result": err.Error(),
+	//		"count":  0,
+	//	}
+	//} else {
+	//	result = gin.H{
+	//		"result": person,
+	//		"count":  1,
+	//	}
+	//}
+	//fmt.Printf(result)
+	//c.JSON(http.StatusOK, result)
+
+}
+
+//get all data in person
+func (idb *InDB) GetPersons(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	GetAPI(tokenString)
+	var (
+		persons []structs.Person
+		result  gin.H
+	)
+
+	idb.DB.Find(&persons)
+	if len(persons) <= 0 {
+		result = gin.H{
+			"result": nil,
+			"count":  0,
+		}
+	} else {
+		result = gin.H{
+			"result": persons,
+			"count":  len(persons),
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+//create new data to the database
+func (idb *InDB) CreatePerson(c *gin.Context) {
+	var (
+		person structs.Person
+
+		result gin.H
+	)
+	firstName := c.PostForm("first_name")
+	lastName := c.PostForm("last_name")
+	phone := c.PostForm("phone_number")
+	imei := c.PostForm("imei")
+	apiKey := authGenerator(imei)
+
+	person.First_Name = firstName
+	person.Last_Name = lastName
+	person.Phone_Number = phone
+	person.API = apiKey
+	person.Imei = imei
+
+	idb.DB.Create(&person)
+
+	result = gin.H{
+		"result": person,
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// update data with {id} as query
+func (idb *InDB) UpdatePerson(c *gin.Context) {
+	id := c.Query("id")
+	firstName := c.PostForm("first_name")
+	lastName := c.PostForm("last_name")
+	phone := c.PostForm("phone_number")
+	var (
+		person    structs.Person
+		newPerson structs.Person
+		result    gin.H
+	)
+
+	err := idb.DB.First(&person, id).Error
+	if err != nil {
+		result = gin.H{
+			"result": "data not found",
+		}
+	}
+	newPerson.First_Name = firstName
+	newPerson.Last_Name = lastName
+
+	newPerson.Phone_Number = phone
+	err = idb.DB.Model(&person).Updates(newPerson).Error
+	if err != nil {
+		result = gin.H{
+			"result": "update failed",
+		}
+	} else {
+		result = gin.H{
+			"result": "successfully updated data",
+		}
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// delete data with {id}
+func (idb *InDB) DeletePerson(c *gin.Context) {
+	var (
+		person structs.Person
+		result gin.H
+	)
+	id := c.Param("id")
+	err := idb.DB.First(&person, id).Error
+	if err != nil {
+		result = gin.H{
+			"result": "data not found",
+		}
+	}
+	err = idb.DB.Delete(&person).Error
+	if err != nil {
+		result = gin.H{
+			"result": "delete failed",
+		}
+	} else {
+		result = gin.H{
+			"result": "Data deleted successfully",
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func authGenerator(imei string) string {
+	sign := jwt.New(jwt.GetSigningMethod("HS256"))
+	token, err := sign.SignedString([]byte(imei))
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+
+	fmt.Print(token)
+	return token
+}
